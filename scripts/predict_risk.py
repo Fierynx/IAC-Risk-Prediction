@@ -45,25 +45,40 @@ def extract_features_for_file(filepath):
     feats = {}
     feats.update(extract_product_metrics(content))
     feats.update(extract_structural_metrics(content, tool))
-    feats.update(extract_semantic_metrics(content))
-    feats.update(extract_iac_specific(content, tool))
-    
-    # Process/History metrics (mocked for single-file CI scenario without git context)
-    # A real CI implementation would query git diffs against main
-    # For demonstration purposes of a "vulnerable" file, we simulate an established file
-    feats.update({
-        'num_commits': 45,
-        'num_authors': 5,
-        'file_age_days': 800,
-        'last_modified_days': 2,
-        'edit_frequency': 1.5,
-        'is_recently_active': 1,
-        'stability_score': 10,
-        'churn_total': feats['loc'] * 5,
-        'churn_avg': feats['loc'] * 0.1,
-        'loc_growth_rate': feats['loc'] / 800.0 if feats['loc'] else 0,
-        'churn_volatility': feats['loc'] * 0.05
-    })
+    # Get real process metrics from Git history
+    import git
+    try:
+        repo = git.Repo(Path.cwd(), search_parent_directories=True)
+        # Attempt to get real history using the extractor
+        from extract_features import extract_process_and_evo_metrics
+        # git log needs the relative path from repo root
+        rel_path = Path(filepath).resolve().relative_to(Path(repo.working_dir))
+        proc_feats = extract_process_and_evo_metrics(repo, str(rel_path))
+        
+        if proc_feats:
+            feats.update(proc_feats)
+        else:
+            # File is brand new (uncommitted), genuine risk is low
+            feats.update({
+                'num_commits': 0, 'num_authors': 1, 'file_age_days': 0,
+                'last_modified_days': 0, 'edit_frequency': 0,
+                'is_recently_active': 1, 'stability_score': 0
+            })
+            
+    except Exception as e:
+        print(f"Warning: Could not extract Git history ({e}). Assuming new file.")
+        feats.update({
+            'num_commits': 0, 'num_authors': 1, 'file_age_days': 0,
+            'last_modified_days': 0, 'edit_frequency': 0,
+            'is_recently_active': 1, 'stability_score': 0
+        })
+
+    # Add churn approximation for the new file state
+    if 'churn_total' not in feats:
+        feats['churn_total'] = feats.get('num_commits', 0) * feats['loc'] * 0.1
+        feats['churn_avg'] = feats['churn_total'] / max(feats.get('num_commits', 1), 1)
+        feats['loc_growth_rate'] = feats['loc'] / max(feats.get('file_age_days', 1), 1)
+        feats['churn_volatility'] = feats.get('churn_avg', 0) * 0.5
     
     return feats
 
