@@ -1,0 +1,92 @@
+[
+    {
+        "tool": "ansible",
+        "repo": "geerlingguy/ansible-role-docker",
+        "success": true,
+        "local_path": "data\\raw\\ansible\\ansible-role-docker"
+    },
+    {
+        "tool": "ansible",
+        "repo": "geerlingguy/ansible-role-mysql",
+        "success": true,
+        "local_path": "data\\raw\\ansible\\ansible-role-mysql"
+    },
+    {
+        "tool": "ansible",
+        "repo": "ansible/ansible-examples",
+        "success": true,
+        "local_path": "data\\raw\\ansible\\ansible-examples"
+    },
+    {
+        "tool": "ansible",
+        "repo": "debops/debops",
+        "success": true,
+        "local_path": "data\\raw\\ansible\\debops"
+    },
+    {
+        "tool": "ansible",
+        "repo": "ansible/awx",
+        "success": true,
+        "local_path": "data\\raw\\ansible\\awx"
+    },
+    {
+        "tool": "terraform",
+        "repo": "terraform-aws-modules/terraform-aws-s3-bucket",
+        "success": true,
+        "local_path": "data\\raw\\terraform\\terraform-aws-s3-bucket"
+    },
+    {
+        "tool": "terraform",
+        "repo": "terraform-aws-modules/terraform-aws-vpc",
+        "success": true,
+        "local_path": "data\\raw\\terraform\\terraform-aws-vpc"
+    },
+    {
+        "tool": "terraform",
+        "repo": "terraform-aws-modules/terraform-aws-eks",
+        "success": true,
+        "local_path": "data\\raw\\terraform\\terraform-aws-eks"
+    },
+    {
+        "tool": "terraform",
+        "repo": "gruntwork-io/terragrunt-infrastructure-live-example",
+        "success": true,
+        "local_path": "data\\raw\\terraform\\terragrunt-infrastructure-live-example"
+    },
+    {
+        "tool": "terraform",
+        "repo": "antonbabenko/pre-commit-terraform",
+        "success": true,
+        "local_path": "data\\raw\\terraform\\pre-commit-terraform"
+    },
+    {
+        "tool": "chef",
+        "repo": "sous-chefs/apache2",
+        "success": true,
+        "local_path": "data\\raw\\chef\\apache2"
+    },
+    {
+        "tool": "chef",
+        "repo": "chef-cookbooks/mysql",
+        "success": true,
+        "local_path": "data\\raw\\chef\\mysql"
+    },
+    {
+        "tool": "chef",
+        "repo": "sous-chefs/postgresql",
+        "success": true,
+        "local_path": "data\\raw\\chef\\postgresql"
+    },
+    {
+        "tool": "chef",
+        "repo": "sous-chefs/nginx",
+        "success": true,
+        "local_path": "data\\raw\\chef\\nginx"
+    },
+    {
+        "tool": "chef",
+        "repo": "facebook/chef-cookbooks",
+        "success": true,
+        "local_path": "data\\raw\\chef\\chef-cookbooks"
+    }
+]

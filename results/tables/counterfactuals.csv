@@ -1,0 +1,7 @@
+repo,filepath,base_risk,new_risk,feature_changed,original_value,new_value
+debops/debops,ansible/roles/hwraid/meta/main.yml,1.0,0.745,num_commits,6,3.0
+debops/debops,ansible/roles/icinga/meta/main.yml,1.0,0.785,num_commits,6,3.0
+debops/debops,ansible/roles/icinga/tasks/main_env.yml,1.0,0.55,num_commits,4,2.0
+debops/debops,ansible/roles/icinga_db/defaults/main.yml,1.0,0.89,file_age_days,2344,1172.0
+debops/debops,ansible/roles/icinga_db/meta/main.yml,1.0,0.785,num_commits,6,3.0
+debops/debops,ansible/roles/global_handlers/handlers/rstudio_server.yml,1.0,0.59,num_commits,4,2.0

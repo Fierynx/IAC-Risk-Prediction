@@ -1,0 +1,40 @@
+name: IaC Risk Scan
+
+on:
+  push:
+    paths:
+      - '**/*.tf'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '**/*.rb'
+  pull_request:
+    paths:
+      - '**/*.tf'
+      - '**/*.yml'
+      - '**/*.yaml'
+      - '**/*.rb'
+
+jobs:
+  risk_scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed if git history features are used
+          
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v42
+        
+      - name: Run IaC Risk Predictor
+        # Assuming the image is published, or built locally
+        # Here we build it on the fly for the prototype
+        run: |
+          docker build -t iac-risk-predictor .
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            if [[ $file == *.tf ]] || [[ $file == *.yml ]] || [[ $file == *.yaml ]] || [[ $file == *.rb ]]; then
+              echo "Scanning $file..."
+              docker run -v $(pwd):/workspace -w /workspace iac-risk-predictor --file $file
+            fi
+          done
