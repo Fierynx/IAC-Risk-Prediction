@@ -3,11 +3,19 @@ import sys
 import os
 import joblib
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
 # Import extractors from our feature extraction script
+import importlib.util
+
+spec = importlib.util.spec_from_file_location("extract_features", str(Path(__file__).parent / "03_extract_features.py"))
+extract_features = importlib.util.module_from_spec(spec)
+sys.modules["extract_features"] = extract_features
+spec.loader.exec_module(extract_features)
+
 from extract_features import extract_product_metrics, extract_structural_metrics, extract_semantic_metrics, extract_iac_specific
 
 def get_tool_from_extension(filepath):
@@ -42,17 +50,18 @@ def extract_features_for_file(filepath):
     
     # Process/History metrics (mocked for single-file CI scenario without git context)
     # A real CI implementation would query git diffs against main
+    # For demonstration purposes of a "vulnerable" file, we simulate an established file
     feats.update({
-        'num_commits': 1,
-        'num_authors': 1,
-        'file_age_days': 0,
-        'last_modified_days': 0,
-        'edit_frequency': 0,
+        'num_commits': 45,
+        'num_authors': 5,
+        'file_age_days': 800,
+        'last_modified_days': 2,
+        'edit_frequency': 1.5,
         'is_recently_active': 1,
-        'stability_score': 0,
-        'churn_total': feats['loc'] * 0.1,
+        'stability_score': 10,
+        'churn_total': feats['loc'] * 5,
         'churn_avg': feats['loc'] * 0.1,
-        'loc_growth_rate': feats['loc'],
+        'loc_growth_rate': feats['loc'] / 800.0 if feats['loc'] else 0,
         'churn_volatility': feats['loc'] * 0.05
     })
     
@@ -96,11 +105,11 @@ def main():
     print(f"Risk Probability: {risk_prob:.2%}")
     
     if risk_prob < 0.3:
-        print("Risk Level: LOW ✅")
+        print("Risk Level: LOW")
     elif risk_prob < 0.6:
-        print("Risk Level: MEDIUM ⚠️")
+        print("Risk Level: MEDIUM")
     else:
-        print("Risk Level: HIGH 🚨")
+        print("Risk Level: HIGH")
         print("\nWARNING: This script has a high probability of containing defects.")
         
     # Get top contributing factors for this specific file
