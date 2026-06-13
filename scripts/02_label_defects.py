@@ -49,14 +49,19 @@ def extract_labels_from_repo(repo_info):
         logging.error(f"Failed to get commits for {repo_name}: {e}")
         return []
         
-    logging.info(f"Mining {len(commits)} commits in {repo_name}...")
+    if not commits:
+        return []
+        
+    cutoff_idx = int(len(commits) * 0.2) # 20% newest commits
+    logging.info(f"Mining {len(commits)} commits in {repo_name} (20% Future, 80% Past)...")
     
-    for commit in commits:
+    for i, commit in enumerate(commits):
         msg = commit.message
         
         if not msg:
             continue
             
+        is_future = True if i < cutoff_idx else False
         # Check if it's a defect-fixing commit
         is_defect = bool(DEFECT_KEYWORDS.search(msg))
         
@@ -83,6 +88,7 @@ def extract_labels_from_repo(repo_info):
                             "commit_sha": commit.hexsha,
                             "commit_date": datetime.fromtimestamp(commit.committed_date).isoformat(),
                             "is_defect": 1 if is_defect else 0,
+                            "is_future": 1 if is_future else 0,
                             "commit_message": msg.strip().replace("\n", " ")
                         })
         except Exception as e:
@@ -112,12 +118,22 @@ def main():
         
     df = pd.DataFrame(all_labels)
     
-    # Deduplicate: if a file was EVER touched by a defect commit, it's marked as defect-prone
-    file_level_df = df.groupby(["repo", "tool", "filepath"]).agg({
-        "is_defect": "max",
-        "commit_sha": "count" # number of times file was touched
-    }).reset_index()
-    file_level_df.rename(columns={"commit_sha": "touch_count"}, inplace=True)
+    # Split into Past (is_future=0) and Future (is_future=1)
+    past_df = df[df['is_future'] == 0]
+    future_df = df[df['is_future'] == 1]
+    
+    # Process past (feature: how many times it was touched in the past)
+    past_counts = past_df.groupby(["repo", "tool", "filepath"]).size().reset_index(name="touch_count")
+    
+    # Process future (target: did it ever have a defect in the future?)
+    future_defects = future_df.groupby(["repo", "tool", "filepath"])["is_defect"].max().reset_index(name="is_defect")
+    
+    # Merge them. We keep all files from both periods (outer merge).
+    file_level_df = pd.merge(past_counts, future_defects, on=["repo", "tool", "filepath"], how="outer").fillna(0)
+    
+    # Ensure types
+    file_level_df["touch_count"] = file_level_df["touch_count"].astype(int)
+    file_level_df["is_defect"] = file_level_df["is_defect"].astype(int)
     
     output_dir = Path("data/processed")
     output_dir.mkdir(parents=True, exist_ok=True)

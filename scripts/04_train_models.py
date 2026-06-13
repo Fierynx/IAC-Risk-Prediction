@@ -138,6 +138,13 @@ def main():
     for train_idx, test_idx in skf.split(X, y):
         X_tr, X_te = scaler.fit_transform(X[train_idx]), scaler.transform(X[test_idx])
         y_tr, y_te = y[train_idx], y[test_idx]
+        
+        try:
+            sm = SMOTE(random_state=42)
+            X_tr, y_tr = sm.fit_resample(X_tr, y_tr)
+        except ValueError:
+            pass
+            
         y_prob, _ = train_nn(X_tr, y_tr, X_te, epochs=10)
         metrics_list.append(evaluate(y_te, y_prob))
     avg_metrics = pd.DataFrame(metrics_list).mean().to_dict()
@@ -177,6 +184,33 @@ def main():
             avg_metrics.update({'model': model_name, 'experiment': 'Cross-Project'})
             results.append(avg_metrics)
 
+    # Also run NN for Cross-Project
+    metrics_list = []
+    for repo in repos:
+        train_mask = df['repo'] != repo
+        test_mask = df['repo'] == repo
+        if sum(test_mask) < 10 or sum(df[test_mask]['is_defect']) < 1:
+            continue
+        X_tr, X_te = X[train_mask], X[test_mask]
+        y_tr, y_te = y[train_mask], y[test_mask]
+        X_tr = scaler.fit_transform(X_tr)
+        X_te = scaler.transform(X_te)
+        
+        # SMOTE for NN
+        try:
+            sm = SMOTE(random_state=42)
+            X_tr, y_tr = sm.fit_resample(X_tr, y_tr)
+        except ValueError:
+            pass
+            
+        y_prob, _ = train_nn(X_tr, y_tr, X_te, epochs=10)
+        metrics_list.append(evaluate(y_te, y_prob))
+        
+    if metrics_list:
+        avg_metrics = pd.DataFrame(metrics_list).mean().to_dict()
+        avg_metrics.update({'model': 'Feedforward NN', 'experiment': 'Cross-Project'})
+        results.append(avg_metrics)
+
     # 3. Cross-Tool
     logging.info("Running Cross-Tool Transfer...")
     tools = df['tool'].unique()
@@ -193,12 +227,24 @@ def main():
         X_tr = scaler.fit_transform(X_tr)
         X_te = scaler.transform(X_te)
         
-        model = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=42)
-        model.fit(X_tr, y_tr)
-        y_prob = model.predict_proba(X_te)[:, 1]
-        
+        # Scikit-learn models
+        for model_name, model in models.items():
+            model.fit(X_tr, y_tr)
+            y_prob = model.predict_proba(X_te)[:, 1]
+            mets = evaluate(y_te, y_prob)
+            mets.update({'model': model_name, 'experiment': f'Train:Others->Test:{target_tool}'})
+            results.append(mets)
+            
+        # Neural Network
+        try:
+            sm = SMOTE(random_state=42)
+            X_tr_sm, y_tr_sm = sm.fit_resample(X_tr, y_tr)
+        except ValueError:
+            X_tr_sm, y_tr_sm = X_tr, y_tr
+            
+        y_prob, _ = train_nn(X_tr_sm, y_tr_sm, X_te, epochs=10)
         mets = evaluate(y_te, y_prob)
-        mets.update({'model': 'RF', 'experiment': f'Train:Others->Test:{target_tool}'})
+        mets.update({'model': 'Feedforward NN', 'experiment': f'Train:Others->Test:{target_tool}'})
         results.append(mets)
 
     # 4. Ablation Study for RF (Within-Project)

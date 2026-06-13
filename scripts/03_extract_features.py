@@ -51,13 +51,16 @@ def extract_process_and_evo_metrics(repo, filepath):
         num_commits = len(commits)
         authors = set([c.author.email for c in commits])
         
-        # Calculate file age and edit frequency
+        # Calculate file age and edit frequency relative to the snapshot window
+        # to ensure strict temporal isolation.
         first_commit_date = datetime.fromtimestamp(commits[-1].committed_date)
         last_commit_date = datetime.fromtimestamp(commits[0].committed_date)
-        now = datetime.now()
+        simulated_now = last_commit_date
         
-        file_age_days = (now - first_commit_date).days
-        last_modified_days = (now - last_commit_date).days
+        file_age_days = (simulated_now - first_commit_date).days
+        # Since simulated_now == last_commit_date, last_modified_days will be 0 here
+        # but edit_frequency and age will be correct and leak-free.
+        last_modified_days = 0 
         edit_frequency = num_commits / max(file_age_days / 30.0, 1.0)
         
         # Process commit stats to get churn
@@ -188,25 +191,63 @@ def main():
             continue
             
         repo = repo_map[repo_name]
-        full_path = Path(repo.working_dir) / filepath
         
-        if not full_path.exists():
-            continue
-            
         try:
-            with open(full_path, "r", encoding="utf-8") as f:
-                content = f.read()
-        except UnicodeDecodeError:
+            # Extract features from the exact state of the file at the temporal cutoff point
+            # to ensure strict temporal isolation and prevent target leakage.
+            commits = list(repo.iter_commits())
+            if not commits:
+                continue
+            
+            cutoff_idx = int(len(commits) * 0.2)
+            cutoff_commit = commits[cutoff_idx]
+            
+            # Extract file content from that specific snapshot in time
+            blob = cutoff_commit.tree / filepath
+            content = blob.data_stream.read().decode('utf-8')
+        except Exception:
+            # If the file didn't exist at the cutoff point, it was created in the future.
+            # We cannot predict on files that didn't exist yet. Skip.
             continue
             
         # Product
         feats = extract_product_metrics(content)
         
         # Process & Evo
-        proc = extract_process_and_evo_metrics(repo, filepath)
-        if proc:
-            feats.update(proc)
-        else:
+        # Process & Evo
+        # We now extract process metrics using ONLY the past history (up to the cutoff commit)
+        # We pass the cutoff_commit to the extractor instead of just the repo, to ensure it doesn't read the future.
+        try:
+            commits = list(repo.iter_commits(rev=cutoff_commit.hexsha, paths=filepath))
+            if commits:
+                num_commits = len(commits)
+                authors = set([c.author.email for c in commits])
+                first_commit_date = datetime.fromtimestamp(commits[-1].committed_date)
+                last_commit_date = datetime.fromtimestamp(commits[0].committed_date)
+                simulated_now = last_commit_date
+                
+                file_age_days = (simulated_now - first_commit_date).days
+                edit_frequency = num_commits / max(file_age_days / 30.0, 1.0)
+                
+                max_gap = 0
+                commit_dates = [datetime.fromtimestamp(c.committed_date) for c in commits]
+                for i in range(len(commit_dates)-1):
+                    gap = (commit_dates[i] - commit_dates[i+1]).days
+                    if gap > max_gap:
+                        max_gap = gap
+                        
+                feats.update({
+                    'num_commits': num_commits,
+                    'num_authors': len(authors),
+                    'file_age_days': file_age_days,
+                    'last_modified_days': 0,
+                    'edit_frequency': edit_frequency,
+                    'is_recently_active': 1,
+                    'stability_score': max_gap
+                })
+            else:
+                raise Exception("No commits found in past window")
+        except Exception:
             # Fallback
             feats.update({
                 'num_commits': row.get('touch_count', 1),

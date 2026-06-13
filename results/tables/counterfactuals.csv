@@ -1,7 +1,11 @@
 repo,filepath,base_risk,new_risk,feature_changed,original_value,new_value
-debops/debops,ansible/roles/hwraid/meta/main.yml,1.0,0.745,num_commits,6,3.0
-debops/debops,ansible/roles/icinga/meta/main.yml,1.0,0.785,num_commits,6,3.0
-debops/debops,ansible/roles/icinga/tasks/main_env.yml,1.0,0.55,num_commits,4,2.0
-debops/debops,ansible/roles/icinga_db/defaults/main.yml,1.0,0.89,file_age_days,2344,1172.0
-debops/debops,ansible/roles/icinga_db/meta/main.yml,1.0,0.785,num_commits,6,3.0
-debops/debops,ansible/roles/global_handlers/handlers/rstudio_server.yml,1.0,0.59,num_commits,4,2.0
+debops/debops,ansible/roles/dokuwiki/defaults/main.yml,1.0,0.855,avg_line_length,37.33719247467438,18.66859623733719
+terraform-aws-modules/terraform-aws-eks,tests/eks-fargate-profile/versions.tf,1.0,0.765,blank_lines,1.0,0.5
+debops/debops,ansible/roles/docker_server/tasks/main.yml,1.0,0.86,comment_lines,4.0,2.0
+terraform-aws-modules/terraform-aws-eks,tests/self-managed-node-group/versions.tf,1.0,0.78,blank_lines,1.0,0.5
+terraform-aws-modules/terraform-aws-eks,tests/eks-managed-node-group/versions.tf,1.0,0.78,blank_lines,1.0,0.5
+terraform-aws-modules/terraform-aws-eks,examples/self-managed-node-group/versions.tf,1.0,0.78,blank_lines,1.0,0.5
+terraform-aws-modules/terraform-aws-eks,examples/eks-managed-node-group/versions.tf,1.0,0.78,blank_lines,1.0,0.5
+debops/debops,ansible/roles/etckeeper/tasks/main.yml,1.0,0.875,avg_line_length,32.1764705882353,16.08823529411765
+debops/debops,ansible/roles/avahi/tasks/main.yml,1.0,0.88,avg_line_length,32.3768115942029,16.18840579710145
+terraform-aws-modules/terraform-aws-eks,modules/hybrid-node-role/versions.tf,1.0,0.765,blank_lines,1.0,0.5
